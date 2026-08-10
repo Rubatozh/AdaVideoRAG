@@ -1,0 +1,12 @@
+.DS_Store
+.idea/
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
+build/
+dist/
+*.egg-info/
+.checkpoints/
+adavideorag_cache*/
