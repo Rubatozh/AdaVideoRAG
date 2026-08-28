@@ -7,6 +7,9 @@ from typing import Callable, Union
 from collections import Counter, defaultdict
 import io
 import csv
+# BENCH SEAM BEGIN
+from . import bench_hooks as _bench
+# BENCH SEAM END
 from ._utils import (
     logger,
     clean_str,
@@ -947,6 +950,9 @@ async def videorag_query_B_pipeline(
         retrieved_segments,
         key=_video_segment_sort_key,
     )
+# BENCH SEAM BEGIN
+    retrieved_segments = _bench.retrieved(retrieved_segments, query=query)
+# BENCH SEAM END
 
     logger.debug("Visual retrieval query: %s", query_for_visual_retrieval)
     logger.info("Retrieved visual segments: %s", sorted(visual_retrieved_segments))
@@ -984,6 +990,9 @@ async def videorag_query_B_pipeline(
     )
 
     remain_segments = [x[0] for x in results if _is_affirmative_filter_result(x[1])]
+# BENCH SEAM BEGIN
+    remain_segments = _bench.filtered(remain_segments, query=query)
+# BENCH SEAM END
 
 
 
@@ -1112,6 +1121,9 @@ async def videorag_query_C_pipeline(
         retrieved_segments,
         key=_video_segment_sort_key,
     )
+# BENCH SEAM BEGIN
+    retrieved_segments = _bench.retrieved(retrieved_segments, query=query)
+# BENCH SEAM END
 
     logger.debug("Visual retrieval query: %s", query_for_visual_retrieval)
     logger.info("Retrieved visual segments: %s", sorted(visual_retrieved_segments))
@@ -1147,6 +1159,9 @@ async def videorag_query_C_pipeline(
         *[_filter_single_segment(query, (s_id, rough_captions[s_id])) for s_id in rough_captions]
     )
     remain_segments = [x[0] for x in results if _is_affirmative_filter_result(x[1])]
+# BENCH SEAM BEGIN
+    remain_segments = _bench.filtered(remain_segments, query=query)
+# BENCH SEAM END
     logger.info("%d video segments remain after filtering", len(remain_segments))
 
     if len(remain_segments) == 0:

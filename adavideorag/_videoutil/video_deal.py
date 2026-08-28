@@ -4,6 +4,9 @@ import os
 
 import easyocr
 import numpy as np
+# BENCH SEAM BEGIN
+from .. import bench_hooks as _bench
+# BENCH SEAM END
 from faster_whisper import WhisperModel
 from moviepy.video.io.VideoFileClip import VideoFileClip
 from PIL import Image
@@ -83,6 +86,14 @@ def deal_video(
                 endpoint=False,
             )
             fine_frame_times += start
+# BENCH SEAM BEGIN
+            frame_times = _bench.frame_times(
+                frame_times, video_name=video_name, start=start, end=end,
+                n=rough_num_frames_per_segment, kind="rough")
+            fine_frame_times = _bench.frame_times(
+                fine_frame_times, video_name=video_name, start=start, end=end,
+                n=fine_num_frames_per_segment, kind="fine")
+# BENCH SEAM END
 
             segment_id = str(segment_index)
             segment_index2name[segment_id] = (
@@ -97,6 +108,10 @@ def deal_video(
             # Save each video segment for visual embedding.
             video_file = f"{segment_index2name[segment_id]}.{video_output_format}"
             final_path = os.path.join(video_segment_cache_path, video_file)
+# BENCH SEAM BEGIN
+            _bench.segment_clip(path=final_path, video_name=video_name,
+                                start=start, end=end, times=list(frame_times))
+# BENCH SEAM END
             if not os.path.exists(final_path):
                 subvideo.write_videofile(
                     final_path,
@@ -126,6 +141,10 @@ def deal_video(
             text_set = set()
             for time_point in frame_times:
                 image = video.get_frame(float(time_point))
+# BENCH SEAM BEGIN
+                image = _bench.frame_pixels(image, video_name=video_name,
+                                            t=float(time_point))
+# BENCH SEAM END
                 ocr_results = ocr_reader.readtext(image)
 
                 det_info = ""
@@ -185,6 +204,11 @@ def deal_video(
         for index in tqdm(segment_index2name, desc=f"Captioning Video {video_name}"):
             frame_times = segment_times_info[index]["frame_times"]
             video_frames = encode_video(video, frame_times)
+# BENCH SEAM BEGIN
+            video_frames = _bench.frames_for(video_frames,
+                                             video_name=video_name,
+                                             times=list(frame_times))
+# BENCH SEAM END
             segment_transcript = transcripts.get(index, "")
             segment_ocr = ocrs[index]
             query = (
